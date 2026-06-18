@@ -1,7 +1,7 @@
 # Code for two companion papers on grandmothering and the evolution of the human female life history
 
 **Author:** [Author information withheld for double-anonymous review]  
-**Both papers submitted to:** Proceedings of the Royal Society B  
+**Both papers submitted to:** American Naturalist 
 **Contact:** [Contact information withheld for double-anonymous review]
 
 ---
