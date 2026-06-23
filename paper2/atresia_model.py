@@ -69,19 +69,27 @@ plt.rcParams.update({"figure.dpi": 130, "font.size": 10.5,
 
 # ── Parameters ─────────────────────────────────────────────────────────────
 N0_H    = 1_000_000   # Human follicle count at birth
-N0_C    =   177_000   # Chimp N0 giving T_m≈52 with human Phase 2 dynamics
-                      # (chimp endowment ~18% of human; Cloutier et al. 2015
-                      #  show measurement on sections vs whole ovaries may
-                      #  account for most of this difference, but a smaller
-                      #  chimp initial endowment is also plausible)
+N0_C    =   177_000   # (retained for reference only; see chimp note below)
 N_SWITCH =  25_000    # Phase 2 trigger (Faddy 1992: ~age 37–38 in humans)
 N_CRIT   =   1_000    # Menopause threshold (Faddy & Gosden 1995)
 
 LAM1_H  = 0.097       # Human Phase 1 rate (Faddy 1992)
 LAM2_H  = 0.237       # Human Phase 2 rate (Faddy 1992)
-LAM1_C  = 0.051       # Chimp Phase 1 rate (Cloutier 2015; Jones et al. 2007)
+LAM1_C  = 0.051       # (retained for reference only; chimp now shares LAM1_H)
 
-GAIN_PER_YR = 2.23 / 10   # % fitness gain per yr of earlier menopause (two GMs)
+# Chimp Phase 2 rate. Cloutier et al. 2015 found human and chimpanzee follicle
+# decline are shared to ~age 35 and the post-35 decline is "much less steep" in
+# chimps; they report no exponential constant, so this is a modeling estimate,
+# set between the shared pre-35 rate (~LAM1_H ≈ 0.10/yr) and the human Phase 2
+# rate (0.237/yr). At 0.15/yr the chimp pool stays intact past the conserved
+# ~50-yr reproductive-cessation age (Hawkes & Smith 2010), i.e. follicles persist
+# past cessation rather than being exhausted at it. The chimp curve therefore
+# shares the human Phase 1 trajectory (N0_H, LAM1_H) and diverges only in Phase 2.
+LAM2_C  = 0.15        # Chimp Phase 2 rate (estimate; Cloutier et al. 2015)
+
+GAIN_PER_YR = 2.23 / 13   # % fitness gain per yr of earlier menopause (two GMs):
+                          # 2.23% total gain spread over the 13-yr advance to the
+                          # two-grandmother optimum T*=37  ->  0.172 %/yr.
 
 
 # ── Core functions ─────────────────────────────────────────────────────────
@@ -113,7 +121,7 @@ def quality_with_checkpoint_aging(ages, alpha_qc=0.0, **kw):
 
 # ── Computed quantities ─────────────────────────────────────────────────────
 Tm_H  = Tm(LAM1_H, LAM2_H)
-Tm_C  = Tm(LAM1_C, LAM2_H, N0=N0_C)
+Tm_C  = Tm(LAM1_H, LAM2_C, N0=N0_H)   # chimp shares human Phase 1; shallower Phase 2
 ts_H  = np.log(N0_H / N_SWITCH) / LAM1_H   # Phase 2 trigger age in humans = 38 yr
 # λ₂ implied by ABM evolved Tr≈47:
 lam2_abm47 = np.log(N_SWITCH / N_CRIT) / (47 - ts_H)
@@ -130,9 +138,9 @@ ax = axs[0, 0]
 ax.semilogy(ages, N_at_age(ages, LAM1_H, LAM2_H),
             color="#1b6ca8", lw=2.2,
             label=f"Human (Faddy 1992); T_m = {Tm_H:.1f} yr")
-ax.semilogy(ages, N_at_age(ages, LAM1_C, LAM2_H, N0=N0_C),
+ax.semilogy(ages, N_at_age(ages, LAM1_H, LAM2_C, N0=N0_H),
             color="#888888", lw=2.0, ls="--",
-            label=f"Chimp model; T_m ≈ {Tm_C:.1f} yr")
+            label=f"Chimp (shallower Phase 2, λ₂≈{LAM2_C}); T_m ≈ {Tm_C:.1f} yr")
 ax.axvspan(35, 52, alpha=0.08, color="#d1495b",
            label="Human Phase 2 steeper after 35\n(Cloutier 2015 — Phase 2 signature)")
 ax.axhline(N_CRIT,   color="0.5", ls=":", lw=0.8)
@@ -221,9 +229,9 @@ ax.legend(frameon=False, fontsize=8.5, loc="lower left")
 # ─── E: Phase 2 signature hypothesis — the human-derived window ───────────
 ax = axs[1, 1]
 # Ancestral: chimp-like (no Phase 2 advance)
-ax.semilogy(ages, N_at_age(ages, LAM1_C, LAM2_H, N0=N0_C),
+ax.semilogy(ages, N_at_age(ages, LAM1_H, LAM2_C, N0=N0_H),
             color="#888888", ls="--", lw=2.0,
-            label=f"Chimp-equivalent (T_m≈{Tm_C:.1f} yr)")
+            label=f"Chimp-equivalent (λ₂≈{LAM2_C}; T_m≈{Tm_C:.1f} yr)")
 # Current human
 ax.semilogy(ages, N_at_age(ages, LAM1_H, LAM2_H),
             color="#1b6ca8", lw=2.2,
@@ -261,7 +269,7 @@ ax.text(47.2, 0.38,
         f"ABM Tr≈47 yr\n→ λ₂≈{lam2_abm47:.3f} (+{(lam2_abm47/LAM2_H-1)*100:.0f}%)",
         fontsize=8.5, color="#d1495b")
 ax.axvline(52, color="#888888", ls="--", lw=1.0)
-ax.text(51.7, 0.22, f"Chimp T_m≈52\n→ λ₂≈{Tm_C:.1f}", fontsize=8, color="#888888", ha="right")
+ax.text(51.7, 0.22, f"Chimp λ₂≈{LAM2_C}\n(T_m≈{Tm_C:.0f}, off-scale)", fontsize=8, color="#888888", ha="right")
 ax.axhline(lam2_abm47, color="#d1495b", ls=":", lw=0.8, alpha=0.6)
 ax.set(xlabel="Evolved / predicted age at menopause (yr)",
        ylabel="Implied Phase 2 rate λ₂  (yr⁻¹)",
